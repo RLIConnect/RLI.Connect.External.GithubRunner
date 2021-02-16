@@ -1,0 +1,52 @@
+
+name: RLI-CI
+
+
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+
+  containerize:
+
+    name: Containerize
+   
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    steps:    
+
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2  
+
+      # Log into Azure Container Registry
+      - name: Log Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: connectdevpreprodcontainerregistry.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      
+      # Setup Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1          
+    
+      # Build and Push Docker Image
+      - name: Build and Push Docker Image
+        id: docker_build
+        uses: docker/build-push-action@v2.2.1
+        with:
+          context: .
+          tags: connectdevpreprodcontainerregistry.azurecr.io/rli.connect.external.githubrunner:latest
+          push: true
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest}}
